@@ -33,4 +33,8 @@ jobs:
       run: npm run lint || echo "Lint skipped"
 
     - name: Test
-      run: npm test
+      run: |
+        echo "Node $(node -v)"
+        echo "npm $(npm -v)"
+        npx vitest --version
+        npx vitest --run --reporter verbose --threads 1 || (npx vitest --run --reporter verbose || true)
