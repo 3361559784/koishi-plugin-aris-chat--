@@ -93,8 +93,8 @@ export default async function pluginApply(ctx: any, config: any) {
   async function getUserState(session: any) {
     const id = getUserKey(session)
     const [found] = await ctx.database.get('aris_chat_user', { id })
-    if (found) return { count: found.count, lastPokeTime: found.lastPokeTime, lastReplyTime: found.lastReplyTime, lastCounterTime: found.lastCounterTime, intervals: found.intervals ? JSON.parse(found.intervals) : [], pokeStyle: found.pokeStyle || 'normal' }
-    return { count: 0, lastPokeTime: 0, lastReplyTime: 0, lastCounterTime: 0, intervals: [], pokeStyle: 'normal' }
+    if (found) return { count: found.count, lastPokeTime: found.lastPokeTime, lastReplyTime: found.lastReplyTime, lastCounterTime: found.lastCounterTime, intervals: found.intervals ? JSON.parse(found.intervals) : [], pokeStyle: found.pokeStyle || 'normal', windowTimer: null as any }
+    return { count: 0, lastPokeTime: 0, lastReplyTime: 0, lastCounterTime: 0, intervals: [], pokeStyle: 'normal', windowTimer: null as any }
   }
 
   async function saveUserState(session: any, state: any) {
@@ -104,8 +104,8 @@ export default async function pluginApply(ctx: any, config: any) {
 
   async function getGroupState(guildId: string) {
     const [found] = await ctx.database.get('aris_chat_group', { id: guildId })
-    if (found) return { count: found.count, mood: found.mood, lastDecayTime: found.lastDecayTime, intervals: found.intervals ? JSON.parse(found.intervals) : [] }
-    return { count: 0, mood: 'neutral', lastDecayTime: Date.now(), intervals: [] }
+    if (found) return { count: found.count, mood: found.mood, lastDecayTime: found.lastDecayTime, intervals: found.intervals ? JSON.parse(found.intervals) : [], decayTimer: null as any }
+    return { count: 0, mood: 'neutral', lastDecayTime: Date.now(), intervals: [], decayTimer: null as any }
   }
 
   async function saveGroupState(guildId: string, state: any) {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import apply, { Config } from '../plugin-core'
+import apply from '../plugin-core'
+import type { Config } from '../index'
 
 describe('apply plugin registration', () => {
   it('should register events and commands', async () => {
