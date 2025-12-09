@@ -1,0 +1,42 @@
+{
+  "name": "koishi-plugin-aris-chat",
+  "version": "1.0.0",
+  "description": "Aris Chat — Koishi plugin for interactive chat/poke features",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --ext .ts",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "koishi": "^4.17.0"
+  },
+  "devDependencies": {
+  },
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/3361559784/koishi-plugin-aris-chat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/3361559784/koishi-plugin-aris-chat/issues"
+  },
+  "homepage": "https://github.com/3361559784/koishi-plugin-aris-chat#readme",
+  "koishi": {
+    "service": {
+      "required": ["database"]
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "lib",
+    "README.md"
+  ],
+  "prepare": "npm run build",
+  "author": "3361559784 <3361559784@example.com>",
+  "keywords": ["koishi", "plugin", "poke", "aris", "aris-chat"],
+  "license": "MIT"
+}
