@@ -153,25 +153,64 @@ export default async function pluginApply(ctx: any, config: any) {
     let counterCount = 0
     let moodType = 'gentle'
     if (groupState) {
-      if (groupState.mood === 'furious') { moodType = 'furious'; responseText = randomChoice(config.responsesFurious); shouldCounterPoke = config.enableCounterPoke; counterCount = Math.floor(Math.random() * (config.counterMax - config.counterMin + 1)) + config.counterMin }
-      else if (groupState.mood === 'angry') responseText = randomChoice(config.responsesAngry)
-      else if (groupState.mood === 'annoyed') responseText = randomChoice(config.responsesAnnoyed)
-      else responseText = randomChoice(config.responsesGentle)
+      if (groupState.mood === 'furious') {
+        moodType = 'furious';
+        responseText = randomChoice(config.responsesFurious)
+        shouldCounterPoke = config.enableCounterPoke
+        counterCount = Math.floor(Math.random() * (config.counterMax - config.counterMin + 1)) + config.counterMin
+      } else if (groupState.mood === 'angry') {
+        responseText = randomChoice(config.responsesAngry)
+      } else if (groupState.mood === 'annoyed') {
+        responseText = randomChoice(config.responsesAnnoyed)
+      } else {
+        responseText = randomChoice(config.responsesGentle)
+      }
     } else {
-      const pokeCount = userState.count; const timeOfDay = getTimeOfDay(new Date()); const pokeStyle = userState.pokeStyle || 'normal'
+      const pokeCount = userState.count
+      const timeOfDay = getTimeOfDay(new Date())
+      const pokeStyle = userState.pokeStyle || 'normal'
       let pokeReplies: string[] = []
       const rapidPokeCount = countRapidPokes(userState.intervals, config.rapidInterval)
       const timeSinceLastCounter = now - (userState.lastCounterTime || 0)
       if (rapidPokeCount >= config.rapidCounterThreshold && timeSinceLastCounter > config.counterCooldown) {
         pokeReplies = [ '够了够了', '系统警告', '哇啊啊' ]
-        shouldCounterPoke = true; counterCount = Math.floor(Math.random() * (config.counterMax - config.counterMin + 1)) + config.counterMin; userState.lastCounterTime = now; await saveUserState(session, userState); userState.count = 0
-      } else if (pokeCount >= config.pokeCounterThreshold) { pokeReplies = ['受够了！看我反击！']; shouldCounterPoke = true; counterCount = 1; userState.count = 0 }
-      else if (pokeCount >= config.pokeAngryThreshold) { pokeReplies = ['不许再戳了！'] }
-      else {
-        if (pokeCount === 1) { pokeReplies = config.responsesGentle }
-        else if (pokeCount === 2) { pokeReplies = config.responsesGentle }
-        else if (pokeCount <= 5) { pokeReplies = config.responsesAnnoyed }
-        else { pokeReplies = config.responsesAngry }
+        shouldCounterPoke = true
+        counterCount = Math.floor(Math.random() * (config.counterMax - config.counterMin + 1)) + config.counterMin
+        userState.lastCounterTime = now
+        await saveUserState(session, userState)
+        userState.count = 0
+      } else if (pokeCount >= config.pokeCounterThreshold) {
+        pokeReplies = ['受够了！看我反击！']
+        shouldCounterPoke = true
+        counterCount = 1
+        userState.count = 0
+      } else if (pokeCount >= config.pokeAngryThreshold) {
+        pokeReplies = ['不许再戳了！']
+      } else {
+        // 新分支：按戳次数和时间段选择
+        if (pokeCount === 1) {
+          // 首次戳，按时间段
+          if (timeOfDay === 'morning' && config.responsesFirst?.morning?.length) {
+            pokeReplies = config.responsesFirst.morning
+          } else if (timeOfDay === 'noon' && config.responsesFirst?.noon?.length) {
+            pokeReplies = config.responsesFirst.noon
+          } else if (timeOfDay === 'night' && config.responsesFirst?.night?.length) {
+            pokeReplies = config.responsesFirst.night
+          } else if (config.responsesFirst?.other?.length) {
+            pokeReplies = config.responsesFirst.other
+          } else {
+            pokeReplies = config.responsesGentle
+          }
+        } else if (pokeCount === 2 && config.responsesSecond?.length) {
+          pokeReplies = config.responsesSecond
+        } else if (pokeCount > 2 && pokeCount <= 5 && config.responsesCombo?.length) {
+          pokeReplies = config.responsesCombo
+        } else if (pokeCount > 5 && config.responsesLimit?.length) {
+          // 替换 N 为实际次数
+          pokeReplies = config.responsesLimit.map((txt: string) => txt.replace(/第N次|第N次/g, `第${pokeCount}次`))
+        } else {
+          pokeReplies = config.responsesGentle
+        }
       }
       responseText = randomChoice(adjustRepliesByStyle(pokeReplies.length ? pokeReplies : config.responsesGentle, pokeStyle))
     }
