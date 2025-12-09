@@ -20,8 +20,11 @@ jobs:
 
     - name: Install dependencies
       run: |
-        npm ci || npm install
-        npm run build
+        echo "Node $(node -v)"
+        echo "npm $(npm -v)"
+        npm config list
+        # Try a clean install; fallback to npm install if ci fails (useful for lockfile mismatch)
+        npm ci || npm install --no-audit --no-fund
 
     - name: Build
       run: npm run build
@@ -30,9 +33,4 @@ jobs:
       run: npm run lint || echo "Lint skipped"
 
     - name: Test
-      run: |
-        node -v
-        npm -v
-        date
-        echo "TZ=$TZ"
-        npx vitest --run --reporter verbose
+      run: npm test
