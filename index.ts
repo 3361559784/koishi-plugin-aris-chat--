@@ -4,6 +4,17 @@ import pluginApply from './plugin-core'
 export const name = 'aris-chat'
 
 export interface Config {
+  // 分次数与时间段的回复池
+  responsesFirst: {
+    morning: string[]
+    noon: string[]
+    night: string[]
+    other: string[]
+  }
+  responsesSecond: string[]
+  responsesCombo: string[]
+  responsesLimit: string[]
+
   pokeWindowMs: number
   userPokeCooldownMs: number
   groupCooldownMs: number
@@ -135,8 +146,8 @@ export const Config = Schema.object({
   apiHeaders: Schema.dict(String).default({ 'Content-Type': 'application/json' }),
   apiTimeout: Schema.number().default(5000),
   apiResponsePath: Schema.string().default('data.message'),
-  moodDecayIntervalMs: Schema.number().default(300000),
-  moodLevels: Schema.array(String).default(['neutral', 'pleasant', 'annoyed', 'angry', 'furious']),
+  moodDecayIntervalMs: Schema.number().default(480000),
+  moodLevels: Schema.array(String).default(['neutral', 'annoyed', 'angry', 'furious']),
   persistenceEnable: Schema.boolean().default(false),
   responsesGentle: Schema.array(String).default([
     '嗯...？Sensei找我有事吗？',

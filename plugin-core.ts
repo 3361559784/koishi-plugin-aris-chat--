@@ -1,13 +1,16 @@
 import { getValueByPath, analyzePokeStyle, countRapidPokes, getAffectionByStyle, getTimeOfDay, getMoodByCount, AFFECTION_CONFIG } from './utils'
 
 export default async function pluginApply(ctx: any, config: any) {
+  // 缓存定时器，避免序列化到数据库
+  const groupDecayTimers = new Map<string, NodeJS.Timeout>()
+  const groupWindowTimers = new Map<string, NodeJS.Timeout>()
   // Define DB models if Koishi DB is available
   try {
     ctx.model.extend('aris_chat_user', {
       id: 'string', guildId: 'string', userId: 'string', count: 'integer', lastPokeTime: 'integer', lastReplyTime: 'integer', lastCounterTime: 'integer', intervals: 'text', pokeStyle: 'string'
     })
     ctx.model.extend('aris_chat_group', {
-      id: 'string', guildId: 'string', count: 'integer', mood: 'string', lastDecayTime: 'integer', intervals: 'text'
+      id: 'string', guildId: 'string', count: 'integer', mood: 'string', lastDecayTime: 'integer', intervals: 'text', lastReplyTime: 'integer'
     })
   } catch (err) {
     // ignore
@@ -104,28 +107,39 @@ export default async function pluginApply(ctx: any, config: any) {
 
   async function getGroupState(guildId: string) {
     const [found] = await ctx.database.get('aris_chat_group', { id: guildId })
-    if (found) return { count: found.count, mood: found.mood, lastDecayTime: found.lastDecayTime, intervals: found.intervals ? JSON.parse(found.intervals) : [], decayTimer: null as any }
-    return { count: 0, mood: 'neutral', lastDecayTime: Date.now(), intervals: [], decayTimer: null as any }
+    if (found) return { count: found.count, mood: found.mood, lastDecayTime: found.lastDecayTime, intervals: found.intervals ? JSON.parse(found.intervals) : [], lastReplyTime: found.lastReplyTime || 0 }
+    return { count: 0, mood: 'neutral', lastDecayTime: Date.now(), intervals: [], lastReplyTime: 0 }
   }
 
   async function saveGroupState(guildId: string, state: any) {
-    await ctx.database.upsert('aris_chat_group', [{ id: guildId, guildId, count: state.count, mood: state.mood, lastDecayTime: state.lastDecayTime, intervals: JSON.stringify(state.intervals || []) }])
+    await ctx.database.upsert('aris_chat_group', [{ id: guildId, guildId, count: state.count, mood: state.mood, lastDecayTime: state.lastDecayTime, lastReplyTime: state.lastReplyTime || 0, intervals: JSON.stringify(state.intervals || []) }])
   }
 
-  async function startMoodDecay(guildId: string) {
+  function scheduleGroupDecay(guildId: string, mood: string) {
     if (!config.enableMoodDecay) return
-    const groupState = await getGroupState(guildId)
-    if (groupState.decayTimer) clearTimeout(groupState.decayTimer)
-    groupState.decayTimer = setTimeout(async () => {
-      const currentState = await getGroupState(guildId)
-      if (currentState.count > 0) {
-        currentState.count = Math.max(0, currentState.count - 1)
-        currentState.mood = getMoodByCount(currentState.count)
-        currentState.lastDecayTime = Date.now()
-        await saveGroupState(guildId, currentState)
-        if (currentState.count > 0) await startMoodDecay(guildId)
-      }
-    }, config.moodDecayIntervalMs)
+    if (groupDecayTimers.has(guildId)) clearTimeout(groupDecayTimers.get(guildId)!)
+    groupDecayTimers.set(guildId, setTimeout(async () => {
+      const current = await getGroupState(guildId)
+      // 逐级衰减
+      if (current.mood === 'furious') current.count = 7
+      else if (current.mood === 'angry') current.count = 4
+      else if (current.mood === 'annoyed') current.count = 2
+      else current.count = 0
+      current.mood = getMoodByCount(current.count)
+      current.lastDecayTime = Date.now()
+      await saveGroupState(guildId, current)
+      if (current.mood !== 'neutral') scheduleGroupDecay(guildId, current.mood)
+    }, config.moodDecayIntervalMs))
+  }
+
+  function scheduleGroupWindowReset(guildId: string) {
+    if (groupWindowTimers.has(guildId)) clearTimeout(groupWindowTimers.get(guildId)!)
+    groupWindowTimers.set(guildId, setTimeout(async () => {
+      const current = await getGroupState(guildId)
+      current.count = 0
+      current.mood = 'neutral'
+      await saveGroupState(guildId, current)
+    }, config.pokeWindowMs))
   }
 
   ctx.on('notice/poke', async (session: any) => {
@@ -141,30 +155,42 @@ export default async function pluginApply(ctx: any, config: any) {
     let groupState: any = null
     if (config.enableGroupCounting && session.guildId) {
       groupState = await getGroupState(session.guildId)
-      if (now - userState.lastReplyTime < config.groupCooldownMs) return
+      // 群冷却：使用群级 lastReplyTime
+      if (now - (groupState.lastReplyTime || 0) < config.groupCooldownMs) return
       groupState.count++
-      await saveGroupState(session.guildId, groupState)
       groupState.mood = getMoodByCount(groupState.count)
-      startMoodDecay(session.guildId)
+      await saveGroupState(session.guildId, groupState)
+      scheduleGroupDecay(session.guildId, groupState.mood)
+      scheduleGroupWindowReset(session.guildId)
     }
-    const justReplied = now - userState.lastReplyTime < config.justRepliedMs
+
     let responseText: string
     let shouldCounterPoke = false
     let counterCount = 0
     let moodType = 'gentle'
     if (groupState) {
       if (groupState.mood === 'furious') {
-        moodType = 'furious';
+        moodType = 'furious'
         responseText = randomChoice(config.responsesFurious)
         shouldCounterPoke = config.enableCounterPoke
-        counterCount = Math.floor(Math.random() * (config.counterMax - config.counterMin + 1)) + config.counterMin
+        const min = Math.max(3, config.counterMin || 1)
+        const max = Math.max(min, config.counterMax || 5)
+        counterCount = Math.floor(Math.random() * (max - min + 1)) + min
       } else if (groupState.mood === 'angry') {
         responseText = randomChoice(config.responsesAngry)
+        // 50% 概率反击 1 次
+        if (config.enableCounterPoke && Math.random() < 0.5) {
+          shouldCounterPoke = true
+          counterCount = 1
+        }
       } else if (groupState.mood === 'annoyed') {
         responseText = randomChoice(config.responsesAnnoyed)
       } else {
         responseText = randomChoice(config.responsesGentle)
       }
+      // 记录群回复时间
+      groupState.lastReplyTime = now
+      await saveGroupState(session.guildId, groupState)
     } else {
       const pokeCount = userState.count
       const timeOfDay = getTimeOfDay(new Date())

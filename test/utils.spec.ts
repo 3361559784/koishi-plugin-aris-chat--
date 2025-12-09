@@ -21,13 +21,13 @@ describe('utility functions', () => {
   it('getMoodByCount should map counts to moods', () => {
     expect(getMoodByCount(0)).toBe('neutral')
     expect(getMoodByCount(1)).toBe('neutral')
-    expect(getMoodByCount(2)).toBe('pleasant')
-    expect(getMoodByCount(3)).toBe('pleasant')
+    expect(getMoodByCount(2)).toBe('neutral')
+    expect(getMoodByCount(3)).toBe('annoyed')
     expect(getMoodByCount(4)).toBe('annoyed')
-    expect(getMoodByCount(5)).toBe('annoyed')
-    expect(getMoodByCount(6)).toBe('angry')
-    expect(getMoodByCount(8)).toBe('angry')
-    expect(getMoodByCount(9)).toBe('furious')
+    expect(getMoodByCount(5)).toBe('angry')
+    expect(getMoodByCount(7)).toBe('angry')
+    expect(getMoodByCount(8)).toBe('furious')
+    expect(getMoodByCount(10)).toBe('furious')
   })
 
   it('countRapidPokes should count rapid intervals with threshold', () => {

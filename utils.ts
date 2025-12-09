@@ -52,9 +52,8 @@ export function getTimeOfDay(date = new Date()): 'morning' | 'noon' | 'day' | 'n
 }
 
 export function getMoodByCount(count: number): string {
-  if (count < 2) return 'neutral'
-  if (count < 4) return 'pleasant'
-  if (count < 6) return 'annoyed'
-  if (count < 9) return 'angry'
+  if (count <= 2) return 'neutral'
+  if (count <= 4) return 'annoyed'
+  if (count <= 7) return 'angry'
   return 'furious'
 }
