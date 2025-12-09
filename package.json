@@ -1,6 +1,6 @@
 {
   "name": "koishi-plugin-aris-chat",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Aris Chat — Koishi plugin for interactive chat/poke features",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
