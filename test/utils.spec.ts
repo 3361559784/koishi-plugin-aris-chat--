@@ -11,11 +11,12 @@ describe('utility functions', () => {
   })
 
   it('getTimeOfDay should return correct day part', () => {
-    expect(getTimeOfDay(new Date('2025-12-09T06:00:00'))).toBe('morning')
-    expect(getTimeOfDay(new Date('2025-12-09T12:00:00'))).toBe('noon')
-    expect(getTimeOfDay(new Date('2025-12-09T15:00:00'))).toBe('day')
-    expect(getTimeOfDay(new Date('2025-12-09T20:00:00'))).toBe('night')
-    expect(getTimeOfDay(new Date('2025-12-09T03:00:00'))).toBe('midnight')
+    // Use explicit timezone offsets to guarantee deterministic behavior across CI environments
+    expect(getTimeOfDay(new Date('2025-12-09T06:00:00+08:00'))).toBe('morning')
+    expect(getTimeOfDay(new Date('2025-12-09T12:00:00+08:00'))).toBe('noon')
+    expect(getTimeOfDay(new Date('2025-12-09T15:00:00+08:00'))).toBe('day')
+    expect(getTimeOfDay(new Date('2025-12-09T20:00:00+08:00'))).toBe('night')
+    expect(getTimeOfDay(new Date('2025-12-09T03:00:00+08:00'))).toBe('midnight')
   })
 
   it('getMoodByCount should map counts to moods', () => {
