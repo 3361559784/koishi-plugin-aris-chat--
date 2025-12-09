@@ -4,17 +4,22 @@
   "description": "Aris Chat — Koishi plugin for interactive chat/poke features",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "lint": "eslint . --ext .ts",
-    "prepublishOnly": "npm run build"
-  },
+  
   "peerDependencies": {
     "koishi": "^4.17.0"
   },
   "devDependencies": {
     "typescript": "^5.5.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "vitest": "^1.4.0",
+    "@types/jest": "^29.5.4",
+    "esbuild": "^0.19.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --ext .ts",
+    "prepublishOnly": "npm run build",
+    "test": "vitest"
   },
   "dependencies": {},
   "repository": {
