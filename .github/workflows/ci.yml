@@ -30,4 +30,4 @@ jobs:
       run: npm run lint || echo "Lint skipped"
 
     - name: Test
-      run: npm test
+      run: npm test -- --run --reporter verbose
